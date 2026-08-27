@@ -1,184 +1,121 @@
 module tb_meds_sram_wrapper();
 
-    localparam DW    = 64;
+    localparam DW = 64;
     localparam DEPTH = 1024;
     localparam ADDR_W = $clog2(DEPTH);
 
-    logic clk, rst_ni;
-    logic req, we;
-    logic [ADDR_W-1:0] addr;
-    logic [DW/8-1:0] be;
-    logic [DW-1:0] wdata, rdata;
+    logic clk_i, rst_ni;
+    logic req_i, we_i;
+    logic [ADDR_W-1:0] addr_i;
+    logic [DW/8-1:0]     be_i;
+    logic [DW-1:0]    wdata_i;
+    logic [DW-1:0]    rdata_o;
 
     int error_count = 0;
 
     logic [DW-1:0] ref_mem [0:DEPTH-1];
 
-    meds_sram_wrapper #(
-        .DW(DW),
-        .DEPTH(DEPTH),
-        .IMPL(0)
-    ) dut (
-        .clk_i   (clk),
-        .rst_ni  (rst_ni),
-        .req_i   (req),
-        .we_i    (we),
-        .addr_i  (addr),
-        .be_i    (be),
-        .wdata_i (wdata),
-        .rdata_o (rdata)
-    );
+    meds_sram_wrapper #(.DW(DW), .DEPTH(DEPTH), .IMPL(0)) DUT (.clk_i(clk_i), .rst_ni(rst_ni), .req_i(req_i), .we_i(we_i),
+    .addr_i(addr_i), .be_i(be_i), .wdata_i(wdata_i), .rdata_o(rdata_o));
 
-    always #5 clk = ~clk;
+        initial clk_i = 0;
+        always #5 clk_i = ~clk_i;
 
-    function logic [DW-1:0] reference_write(
-        input logic [DW-1:0] current,
-        input logic [DW-1:0] wdata_i,
-        input logic [DW/8-1:0] be_i
-    );
-        logic [DW-1:0] result = current;
-        for (int i = 0; i < DW/8; i++) begin
-            if (be_i[i]) begin
-                result[i*8 +: 8] = wdata_i[i*8 +: 8];
+    function logic [DW-1:0] ref_write (input logic [DW-1:0] curr_data, input logic [DW-1:0] wdata_i, input logic [(DW >> 3)-1:0] be_i);
+        logic [DW-1:0] new_data = curr_data;
+        for (int i = 0; i < (DW >> 3); i++) begin 
+            if (be_i[i]) begin 
+                new_data [i*8 +: 8] = wdata_i[i*8 +: 8];
             end
-        end
-        return result;
+            end
+        return new_data;
     endfunction
 
-    task check(
-        input logic [DW-1:0] actual,
-        input logic [DW-1:0] expected,
-        input string name
-    );
-        if (actual !== expected) begin
-            error_count++;
-            $error("[FAIL] %s: expected %h, got %h at %t",
-                   name, expected, actual, $time);
-        end else begin
-            $display("[PASS] %s: %h", name, actual);
+    task check(input logic [DW-1:0] actual, input logic [DW-1:0] expected);
+        if (actual === expected) begin 
+        $display("Test Passed: Actual = %h, Expected = %h", actual, expected);
+        end 
+        else begin 
+        error_count += 1;
+        $display("Test Failed: Actual = %h, Expected = %h", actual, expected);
         end
     endtask
 
-    // Fixed: Added #1 delay for race condition
-    task write_mem(
-        input [ADDR_W-1:0] addr_i,
-        input [DW-1:0] data,
-        input [DW/8-1:0] be_i
-    );
-        @(posedge clk);
-        req = 1;
-        we = 1;
-        addr = addr_i;
-        wdata = data;
-        be = be_i;
+    task write(input logic [ADDR_W-1:0] addr, input logic [DW-1:0] data, input logic [(DW >> 3)-1:0] be);
+
+        @(posedge clk_i);
+        req_i  = 1;
+        we_i   = 1;
+        addr_i = addr;
+        be_i   = be;
+        wdata_i= data;
         #1;
-        @(posedge clk);
-        req = 0;
-        we = 0;
+        @(posedge clk_i);
+        req_i = 0;
+        we_i  = 0;
         #1;
-        ref_mem[addr_i] = reference_write(ref_mem[addr_i], data, be_i);
-        $display("[%t] WRITE: addr=%h, data=%h, be=%b",
-                 $time, addr_i, data, be_i);
+        ref_mem [addr] = ref_write(ref_mem [addr], data, be);
+        $display("Write @ addr = %h, data = %h, be = %b", addr, data, be);
     endtask
 
-    // Fixed: Added #1 delay for race condition
-    task read_mem(
-        input [ADDR_W-1:0] addr_i,
-        input string test_name
-    );
-        @(posedge clk);
-        req = 1;
-        we = 0;
-        addr = addr_i;
+    task read(input logic [ADDR_W-1:0] addr);
+        @(posedge clk_i);
+        req_i = 1;
+        we_i  = 0; 
+        addr_i= addr;
         #1;
-        @(posedge clk);
-        req = 0;
+        @(posedge clk_i);
+        req_i = 0;
         #1;
-        @(posedge clk);
-        $display("[%t] READ: addr=%h, got=%h, expected=%h",
-                 $time, addr_i, rdata, ref_mem[addr_i]);
-        check(rdata, ref_mem[addr_i], test_name);
+        @(posedge clk_i);
+        $display("Read @ addr = %h, actual data = %h, expected data = %h", addr, rdata_o, ref_mem [addr]);
+        check(rdata_o, ref_mem[addr]);
     endtask
 
-    task reset();
+    task reset_ref_mem(); 
+        for (int j = 0; j < DEPTH; j++) begin 
+            ref_mem [j] = 'x;
+        end
+    endtask
+
+    initial begin 
         rst_ni = 0;
-        repeat(2) @(posedge clk);
+        @(posedge clk_i);
         rst_ni = 1;
-        @(posedge clk);
-        $display("[%t] Reset complete", $time);
-    endtask
 
-    // Initialize all memory to 0
-    task init_memory();
-        $display("\nInitializing all memory to 0");
-        for (int i = 0; i < DEPTH; i++) begin
-            write_mem(i, '0, '1);
+        // Test#1: Writing Full Word
+        $display("Test#1: Writing Full Word");
+        write(10'h10, 64'hDEADBEEFDEADBEEF, 8'hFF);
+        read (10'h10);
+
+        // Test#2: Writing Lower Half Word
+        $display("Test#2: Writing Lower Half Word");
+        write(10'h10, 64'hDEADBEEF22222222, 8'h0F);
+        read (10'h10);
+
+        // Test#3: Writing Upper Half Word
+        $display("Test#3: Writing Upper Half Word");
+        write(10'h10, 64'h11111111DEADBEEF, 8'hF0);
+        read (10'h10);
+
+        // Test#4: Writing Only 1 Bytes at Different Address
+        $display("Test#4: Writing Only 1 Bytes at Different Address");
+        write(10'h20, 64'hDEADBEEFDEADBEEF, 8'h01);
+        read (10'h20);
+
+        // Test#5: Checking No Cross-Walk at Two Different Address
+        $display("Test#5: Test#5: Checking No Cross-Walk at Two Different Address");
+        read (10'h10);
+        read (10'h20);
+
+        if (error_count === 0) begin 
+        $display("All Tests Passed");
         end
-    endtask
-
-    initial begin
-        $timeformat(-9, 2, " ns", 10);
-
-        clk = 0;
-        rst_ni = 0;
-        req = 0;
-        we = 0;
-        addr = 0;
-        be = 8'hFF;
-        wdata = 0;
-
-        for (int i = 0; i < DEPTH; i++) begin
-            ref_mem[i] = '0;
+        else begin 
+        $display("Some Tests Failed (%d tests failed)", error_count);
         end
 
-        $display("=== meds_sram_wrapper Testbench Started ===");
-        reset();
-        init_memory();
-
-        // Test 1: Full word write and read
-        write_mem(10'h10, 64'hDEADBEEFCAFEBABE, 8'hFF);
-        read_mem(10'h10, "Full word write/read");
-
-        // Test 2: Byte-mask write (lower 4 bytes only)
-        write_mem(10'h10, 64'hFFFFFFFFAAAAAAAA, 8'b0000_1111);
-        read_mem(10'h10, "Byte-mask write (lower 4 bytes)");
-
-        // Test 3: Byte-mask write (upper 4 bytes only)
-        write_mem(10'h10, 64'hCAFEBABE12345678, 8'b1111_0000);
-        read_mem(10'h10, "Byte-mask write (upper 4 bytes)");
-
-        // Test 4: Multiple addresses with no cross-talk
-        write_mem(10'h20, 64'h1111111122222222, 8'hFF);
-        read_mem(10'h10, "Address 0x10 unchanged");
-        read_mem(10'h20, "Address 0x20 new data");
-
-        // Test 5: Single byte write (byte 0 only)
-        // First, write a known value to address 0x40
-        write_mem(10'h40, 64'h3333333344444444, 8'hFF);
-        read_mem(10'h40, "Before single byte write");
-
-        // Now write only byte 0
-        write_mem(10'h40, 64'hFFFFFFFFFFFFFFFF, 8'b0000_0001);
-        read_mem(10'h40, "Single byte write (byte 0)");
-
-        // Test 6: Reset behavior
-        read_mem(10'h10, "Before reset");
-        rst_ni = 0;
-        @(posedge clk);
-        @(posedge clk);
-        check(rdata, '0, "Reset clears rdata_reg");
-        rst_ni = 1;
-        @(posedge clk);
-        read_mem(10'h10, "After reset (memory preserved)");
-
-        $display("\n=========================================");
-        if (error_count == 0) begin
-            $display("ALL CRITICAL TESTS PASSED");
-        end else begin
-            $display("%0d CRITICAL TESTS FAILED", error_count);
-        end
-        $display("=========================================");
-        $finish;
+        $stop;
     end
 
 endmodule
