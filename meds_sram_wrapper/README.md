@@ -1,4 +1,14 @@
-# meds_sram_wrapper
+<h1 align="center">meds_sram_wrapper</h1>
+
+<p align="center">
+  <b>Maktab-e-Digital Systems</b>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/SystemVerilog-blue?style=flat-square&logo=verilog" alt="SystemVerilog">
+  <img src="https://img.shields.io/badge/RISC_V-darkblue?style=flat-square&logo=riscv" alt="RISC-V">
+</p>
+---
 
 **SRAM Wrapper — Memory Abstraction Layer for MEDS-S1**
 
