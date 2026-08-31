@@ -6,7 +6,7 @@ module meds_sram_wrapper #(
   input  logic clk_i, rst_ni,
   input  logic req_i, we_i,
   input  logic [$clog2(DEPTH)-1:0] addr_i,
-  input  logic [DW/8-1:0]          be_i,    
+  input  logic [(DW >> 3)-1:0]          be_i,    
   input  logic [DW-1:0]            wdata_i,
   output logic [DW-1:0]            rdata_o   // registered, 1-cycle latency
   );
