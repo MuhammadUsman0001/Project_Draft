@@ -89,7 +89,7 @@ module tb_meds_sram_wrapper();
         @(posedge clk_i);
         rst_ni = 1;
 
-        $display("...Initializing memory to '0 for testing...");
+        $display("...Initializing all memory to zero...");
         init_memory();
 
         $display("...Tests for meds sram wrapper are started...");
