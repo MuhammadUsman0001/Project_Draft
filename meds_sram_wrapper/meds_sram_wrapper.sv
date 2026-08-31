@@ -2,14 +2,14 @@ module meds_sram_wrapper #(
   parameter int unsigned DW    = 64,
   parameter int unsigned DEPTH = 1024,
   parameter int unsigned IMPL  = 0   // 0 = behavioural, 1 = FPGA BRAM, 2 = ASIC macro
-)(
+  )(
   input  logic clk_i, rst_ni,
   input  logic req_i, we_i,
   input  logic [$clog2(DEPTH)-1:0] addr_i,
-  input  logic [DW/8-1:0]          be_i,
+  input  logic [DW/8-1:0]          be_i,    
   input  logic [DW-1:0]            wdata_i,
   output logic [DW-1:0]            rdata_o   // registered, 1-cycle latency
-);
+  );
 
   // For IMPL = 0: Behavioural Implementation
   if (IMPL == 0) begin: behavioural
@@ -26,7 +26,7 @@ module meds_sram_wrapper #(
         if (req_i && we_i) begin 
           for (int i = 0; i < (DW >> 3); i++) begin 
             if (be_i[i]) begin 
-              mem [addr_i][i*8 +: 8] <= wdata_i[i*8 +: 8];
+              mem [addr_i][(i << 3) +: 8] <= wdata_i[(i << 3) +: 8];
             end
           end
         end
@@ -42,7 +42,7 @@ module meds_sram_wrapper #(
 
   // For IMPL = 1 or 2 (FPGA BRAM and ASIC macro), which are not Implemented Yet
   else begin: not_implemented
-    initial $fatal("meds_sram_wrapper: Only IMPL = 0 (bahavioural) is Implemented Yet");
+    initial $fatal("meds_sram_wrapper: Only IMPL = 0 (behavioural) is Implemented Yet");
     assign rdata_o = 'x;
   end
 
