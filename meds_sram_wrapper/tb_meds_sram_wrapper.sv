@@ -17,7 +17,7 @@ module tb_meds_sram_wrapper();
 
     logic [ADDR_W-1:0] rand_addr;
     logic [DW-1:0] rand_data;
-    logic [(DW >> 3)-1:0] rand_be;
+    logic [(DW/8)-1:0] rand_be;
 
     meds_sram_wrapper #(.DW(DW), .DEPTH(DEPTH), .IMPL(0)) 
     DUT (.clk_i(clk_i), .rst_ni(rst_ni), 
@@ -28,7 +28,7 @@ module tb_meds_sram_wrapper();
         initial clk_i = 0;
         always #5 clk_i = ~clk_i;
 
-    function automatic logic [DW-1:0] ref_write (input logic [DW-1:0] curr_data, input logic [DW-1:0] wdata_i, input logic [(DW >> 3)-1:0] be_i);
+    function automatic logic [DW-1:0] ref_write (input logic [DW-1:0] curr_data, input logic [DW-1:0] wdata_i, input logic [(DW/8)-1:0] be_i);
         logic [DW-1:0] new_data = curr_data;
         for (int i = 0; i < DW/8 ; i++) begin 
             if (be_i[i]) begin 
@@ -48,7 +48,7 @@ module tb_meds_sram_wrapper();
         end
     endtask
 
-    task write(input logic [ADDR_W-1:0] addr, input logic [DW-1:0] data, input logic [(DW >> 3)-1:0] be);
+    task write(input logic [ADDR_W-1:0] addr, input logic [DW-1:0] data, input logic [(DW/8)-1:0] be);
 
         @(posedge clk_i);
         req_i  = 1;
