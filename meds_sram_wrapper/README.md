@@ -1,15 +1,4 @@
-<h1 align="center">meds_sram_wrapper</h1>
-
-<p align="center">
-  <b>Maktab-e-Digital Systems</b>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/SystemVerilog-blue?style=flat-square&logo=verilog" alt="SystemVerilog">
-  <img src="https://img.shields.io/badge/RISC_V-darkblue?style=flat-square&logo=riscv" alt="RISC-V">
-</p>
-
----
+# meds_sram_wrapper
 
 **SRAM Wrapper — Memory Abstraction Layer for MEDS-S1**
 
@@ -26,7 +15,7 @@
 
 A parameterized memory wrapper providing a unified interface for all memory arrays in the MEDS-S1 SoC. Supports simulation, FPGA, and ASIC implementations through a single abstraction layer.
 
-> All memory arrays must instantiate this wrapper. No direct memory in core RTL. (NFR-5)
+> **All memory arrays must instantiate this wrapper. No direct memory in core RTL. (NFR-5)**
 
 ---
 
@@ -57,9 +46,9 @@ A parameterized memory wrapper providing a unified interface for all memory arra
 
 ## ⚙️ Operation
 
-- **Write:** `req_i=1`, `we_i=1` → writes `wdata_i` to `addr_i`; only bytes with `be_i[i]=1` updated
-- **Read:** `req_i=1`, `we_i=0` → `rdata_o` available next cycle
-- **Reset:** `rst_ni=0` → clears `rdata_reg`; memory contents preserved
+- **Write:** `req_i=1`, `we_i=1` → writes `wdata_i` to `addr_i`; only bytes with `be_i[i]=1` updated.
+- **Read:** `req_i=1`, `we_i=0` → `rdata_o` available next cycle.
+- **Reset:** `rst_ni=0` → clears `rdata_reg`; memory contents preserved.
 
 ---
 
@@ -75,7 +64,7 @@ A parameterized memory wrapper providing a unified interface for all memory arra
 | 6 | Address boundaries |
 | 7 | 20 random tests |
 
-**Status:** All tests passed 
+**Status:** All tests passed.
 
 ---
 
@@ -83,8 +72,14 @@ A parameterized memory wrapper providing a unified interface for all memory arra
 
 ```systemverilog
 meds_sram_wrapper #(.DW(64), .DEPTH(1024), .IMPL(0)) u_sram (
-    .clk_i(clk), .rst_ni(rst_n), .req_i(req), .we_i(we),
-    .addr_i(addr), .be_i(be), .wdata_i(wdata), .rdata_o(rdata)
+    .clk_i(clk),
+    .rst_ni(rst_n),
+    .req_i(req),
+    .we_i(we),
+    .addr_i(addr),
+    .be_i(be),
+    .wdata_i(wdata),
+    .rdata_o(rdata)
 );
 ```
 
@@ -99,7 +94,9 @@ meds_sram_wrapper #(.DW(64), .DEPTH(1024), .IMPL(0)) u_sram (
 
 ## 🔗 References
 
-- MEDS-S1 Spec §17 | INTERFACES.md §8 | NFR-5
+- MEDS-S1 Spec §17
+- INTERFACES.md §8
+- NFR-5
 
 ---
 
