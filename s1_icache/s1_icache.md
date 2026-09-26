@@ -118,4 +118,4 @@ Read latency is one cycle, registered output, per `meds_s1_sram`.
 
 ## Open questions
 
--None for now
+- None for now
